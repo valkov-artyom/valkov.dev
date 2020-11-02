@@ -1,10 +1,20 @@
 import { useState, useEffect } from 'react';
-import Head from 'next/head'
+import Head from 'next/head';
 import fire from '../config/firebase-config';
-import CreatePost from "../components/CreatePost";
-
+import CreatePost from '../components/CreatePost';
+import Link from 'next/link';
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
+  const [notification, setNotification] = useState('');
+  const [loggedIn, setLoggedIn] = useState(false);
+  fire.auth()
+    .onAuthStateChanged((user) => {
+      if (user) {
+        setLoggedIn(true)
+      } else {
+        setLoggedIn(false)
+      }
+    })
   useEffect(() => {
     fire.firestore()
       .collection('blog')
@@ -16,25 +26,47 @@ const Home = () => {
         setBlogs(blogs);
       });
   }, []);
-
-  console.log(blogs)
+  const handleLogout = () => {
+    fire.auth()
+      .signOut()
+      .then(() => {
+        setNotification('Logged out')
+        setTimeout(() => {
+          setNotification('')
+        }, 2000)
+      });
+  }
   return (
     <div>
       <Head>
-        <title>valkov.dev</title>
+        <title>Blog App</title>
       </Head>
-      <h1>My best project</h1>
-      <CreatePost />
+      <h1>Blog</h1>
+      {notification}
+      {!loggedIn
+        ?
+        <div>
+          <Link href="/users/register">
+            <a>Register</a>
+          </Link> |
+          <Link href="/users/login">
+            <a> Login</a>
+          </Link>
+        </div>
+        :
+        <button onClick={handleLogout}>Logout</button>
+      }
       <ul>
         {blogs.map(blog =>
           <li key={blog.id}>
-            {blog.title}
+            <Link href="/blog/[id]" as={'/blog/' + blog.id }>
+              <a itemProp="hello">{blog.title}</a>
+            </Link>
           </li>
         )}
       </ul>
+      {loggedIn && <CreatePost />}
     </div>
   )
 }
 export default Home;
-
-
